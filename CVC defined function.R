@@ -9,7 +9,7 @@ library(dplyr)
 
 
 ### Run the examples! ###
-run <- T
+run <- F
 
 ### First a function that runs the actual cross validation, and outputs the actual CV values.
 caret_CV <- function(x, y, V = 5, models = c("rf"), SS_data = NULL, SS_response = NULL, tune_params = "default", ...){
@@ -281,4 +281,23 @@ CVC_full <- function(x, y, V = 5, models = c("rf"), SS_data = NULL, tune_params 
   
   ## Returning the results
   return(VCV)
+}
+
+#### Quick example
+if(run){
+  set.seed(1)
+  TrainData <- data.frame(replicate(15, runif(850)))
+  TestData <- data.frame(replicate(15, runif(200))) %>% dplyr::mutate(y = sin(pi*sqrt(X1*X3)) + rnorm(200, sd = 0.5))
+  CV_noSS <- caret_CV(x = TrainData, y = sin(pi*sqrt(TrainData[,1]*TrainData[,3])) + rnorm(nrow(TrainData), sd = 0.5), 
+                       V = 5, models = c("ranger", "rf"))
+  CV_SS <-  caret_CV(x = TrainData, y = sin(pi*sqrt(TrainData[,1]*TrainData[,3])) + rnorm(nrow(TrainData), sd = 0.5), 
+                      SS_data = TestData,  models = c("rf", "ranger"), SS_response = "y",
+                      tune_params = list(rf = expand.grid(mtry = c(2, 8, 15)), 
+                                         ranger = expand.grid(mtry = c(2, 8, 15), splitrule = "variance", min.node.size = c(1, 5))))
+  CVC_noSS <- CVC_full(x = TrainData, y = sin(pi*sqrt(TrainData[,1]*TrainData[,3])) + rnorm(nrow(TrainData), sd = 0.5), 
+                       V = 5, models = c("ranger", "rf"))
+  CVC_SS <-  CVC_full(x = TrainData, y = sin(pi*sqrt(TrainData[,1]*TrainData[,3])) + rnorm(nrow(TrainData), sd = 0.5), 
+                      SS_data = TestData,  models = c("rf", "ranger"), SS_response = "y",
+                      tune_params = list(rf = expand.grid(mtry = c(2, 8, 15)), 
+                                         ranger = expand.grid(mtry = c(2, 8, 15), splitrule = "variance", min.node.size = c(1, 5))))
 }
